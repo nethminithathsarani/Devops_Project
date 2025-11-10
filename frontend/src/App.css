@@ -1,4 +1,22 @@
-.App {
+:root{
+  --bg:#f6f8fb;
+  --card:#ffffff;
+  --accent:#4f46e5;
+  --muted:#6b7280;
+}
+body{font-family:Inter,Segoe UI,Roboto,Arial,Helvetica,sans-serif;background:var(--bg);margin:0}
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:var(--card);box-shadow:0 1px 4px rgba(16,24,40,0.04)}
+.app-header .brand{font-weight:700;color:var(--accent);font-size:1.15rem}
+.app-header nav a{margin-left:12px;color:var(--muted);text-decoration:none}
+.container{max-width:720px;margin:32px auto;padding:0 16px}
+.card{background:var(--card);padding:20px;border-radius:8px;box-shadow:0 6px 18px rgba(16,24,40,0.06)}
+.form{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.form label{font-size:0.9rem;color:var(--muted)}
+.form input{padding:10px;border:1px solid #e6e9ef;border-radius:6px}
+.form button{background:var(--accent);color:white;padding:10px;border-radius:6px;border:0;cursor:pointer}
+.message{margin-top:12px;padding:10px;border-radius:6px}
+.message.success{background:#ecfdf5;color:#065f46}
+.message.error{background:#fff1f2;color:#7f1d1d}.App {
   text-align: center;
 }
 
