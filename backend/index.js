@@ -1,4 +1,5 @@
 // backend/index.js
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -30,6 +31,9 @@ app.get('/healthz', (req, res) => res.status(200).send('ok'));
 
 // Mongoose connect with retry
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:27017/mydb';
+if (!process.env.MONGO_URI) {
+  console.warn('MONGO_URI not set; falling back to default docker mongo service');
+}
 const connectWithRetry = () => {
   console.log('Attempting MongoDB connection...');
   mongoose.connect(MONGO_URI)

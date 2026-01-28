@@ -1,5 +1,6 @@
 const express = require('express');
 const Post = require('../models/Post');
+const requireAuth = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -25,11 +26,16 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/posts
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
-    const { title, body, author } = req.body;
+    const { title, body, imageUrl } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
-    const post = new Post({ title, body, author });
+    const post = new Post({
+      title,
+      body,
+      imageUrl,
+      author: process.env.ADMIN_DISPLAY_NAME || req.admin.username
+    });
     await post.save();
     res.status(201).json(post);
   } catch (err) {
@@ -38,10 +44,17 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/posts/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
   try {
-    const { title, body, author } = req.body;
-    const post = await Post.findByIdAndUpdate(req.params.id, { title, body, author }, { new: true });
+    const { title, body, imageUrl } = req.body;
+    if (title === undefined && body === undefined && imageUrl === undefined) {
+      return res.status(400).json({ error: 'Nothing to update' });
+    }
+    const update = { author: process.env.ADMIN_DISPLAY_NAME || req.admin.username };
+    if (title !== undefined) update.title = title;
+    if (body !== undefined) update.body = body;
+    if (imageUrl !== undefined) update.imageUrl = imageUrl;
+    const post = await Post.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!post) return res.status(404).json({ error: 'Post not found' });
     res.json(post);
   } catch (err) {
@@ -50,7 +63,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/posts/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const post = await Post.findByIdAndDelete(req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });

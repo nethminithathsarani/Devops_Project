@@ -36,7 +36,7 @@ pipeline {
         stage('Deploy (Optional)') {
             steps {
                 echo 'Deploying to environment...'
-                // Add deployment steps here (e.g., docker-compose, Kubernetes, AWS, etc.)
+         
             }
         }
     }

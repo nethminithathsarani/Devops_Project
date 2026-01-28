@@ -6,7 +6,7 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:4001';
 
 function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -16,12 +16,14 @@ function Login() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await axios.post(`${API_BASE}/api/auth/login`, { username: email, password });
-      // store token if returned
-      if (res.data && res.data.token) localStorage.setItem('token', res.data.token);
-      setMessage({ type: 'success', text: 'Login successful' });
-      // redirect to home
-      navigate('/');
+      const res = await axios.post(`${API_BASE}/api/auth/login`, { username, password });
+      if (res.data && res.data.token) {
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('username', res.data.username || username);
+        window.dispatchEvent(new Event('authchange'));
+      }
+      setMessage({ type: 'success', text: 'Login successful — redirecting to dashboard' });
+      navigate('/dashboard');
     } catch (err) {
       const text = err.response?.data?.error || 'Login failed';
       setMessage({ type: 'error', text });
@@ -34,11 +36,11 @@ function Login() {
     <div className="card">
       <h2>Login</h2>
       <form onSubmit={handleSubmit} className="form">
-        <label>Email</label>
-        <input value={email} onChange={e => setEmail(e.target.value)} type="text" placeholder="Email or username" required />
+        <label>Admin Username</label>
+        <input value={username} onChange={e => setUsername(e.target.value)} type="text" placeholder="Enter admin username" required />
 
         <label>Password</label>
-        <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" required />
+        <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Enter admin password" required />
 
         <button type="submit" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</button>
       </form>

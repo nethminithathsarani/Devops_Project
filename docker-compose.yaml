@@ -10,6 +10,7 @@ services:
       - HOST=0.0.0.0
       - PORT=3000
       - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_API_URL=http://localhost:4001
     restart: unless-stopped
     depends_on:
       - backend
@@ -22,6 +23,8 @@ services:
       - "4001:5000"
     stdin_open: true
     tty: true
+    env_file:
+      - ./backend/.env
     environment:
       - HOST=0.0.0.0
       - PORT=5000
