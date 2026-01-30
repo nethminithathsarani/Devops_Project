@@ -2,54 +2,18 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Security Group for Jenkins
-resource "aws_security_group" "jenkins_sg" {
-  name        = "jenkins-security-group"
-  description = "Security group for Jenkins server"
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+# Reference existing security group
+data "aws_security_group" "jenkins_sg" {
+  name = "jenkins-security-group"
 }
 
 # EC2 Instance for Jenkins
 resource "aws_instance" "jenkins_server" {
-  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu 20.04 (update for your region)
-  instance_type = "t2.medium"
-  key_name      = "your-key-pair-name" # Create this in AWS console first
+  ami           = "ami-0fb0b230890ccd1e6"
+  instance_type = "t3.micro"
+  key_name      = "personal-blog-key"
 
-  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
+  vpc_security_group_ids = [data.aws_security_group.jenkins_sg.id]
 
   user_data = <<-EOF
               #!/bin/bash
