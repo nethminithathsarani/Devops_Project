@@ -1,99 +1,119 @@
 pipeline {
     agent any
 
+    // Build on every GitHub push so Jenkins stays in sync with repo state.
+    triggers {
+        githubPush()
+    }
+
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-login')
-        AWS_CREDENTIALS = credentials('aws-creds')
-        IMAGE_NAME = 'nethmini12/personal-blog'
-        GIT_REPO_URL = 'https://github.com/nethminithathsarani/Devops_Project.git'
-        GIT_BRANCH = 'main'
+        AWS_CREDENTIALS       = credentials('aws-creds')
+        FRONT_IMAGE           = 'nethmini12/personal-blog-frontend'
+        BACK_IMAGE            = 'nethmini12/personal-blog-backend'
+        IMAGE_TAG             = 'latest'
+    }
+
+    options {
+        skipDefaultCheckout(true) // Avoid implicit checkout so we can control it in the stage.
+        timestamps()
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                git branch: "${GIT_BRANCH}", url: "${GIT_REPO_URL}"
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                dir('frontend') {
-                    sh "docker build -t ${IMAGE_NAME}:latest ."
+                // Explicit checkout keeps the workspace clean and allows branch overrides from the job.
+                checkout scm
+                script {
+                    env.SHORT_COMMIT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                 }
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Install') {
             steps {
+                // Cache npm downloads locally to speed up re-runs on the same agent.
+                dir('frontend') {
+                    sh 'npm ci --cache $HOME/.npm --prefer-offline'
+                }
+                dir('backend') {
+                    sh 'npm ci --cache $HOME/.npm --prefer-offline'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // Run frontend unit tests in CI mode; backend currently has no tests but keeps hook.
+                dir('frontend') {
+                    sh 'CI=true npm test -- --watch=false --passWithNoTests'
+                }
+                dir('backend') {
+                    sh 'npm test'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                // Build the production React bundle to fail fast before container builds.
+                dir('frontend') {
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    // Use the commit SHA tag for traceability alongside latest.
+                    def commitTag = env.SHORT_COMMIT ?: env.IMAGE_TAG
+                    sh "docker build -f frontend/Dockerfile -t ${FRONT_IMAGE}:latest -t ${FRONT_IMAGE}:${commitTag} ."
+                    sh "docker build -f backend/Dockerfile -t ${BACK_IMAGE}:latest -t ${BACK_IMAGE}:${commitTag} backend"
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                // Push both frontend and backend images so deploy can pull by tag.
                 sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
-            }
-        }
-
-        stage('Push to Docker Hub') {
-            steps {
-                dir('frontend') {
-                    sh "docker push ${IMAGE_NAME}:latest"
+                script {
+                    def commitTag = env.SHORT_COMMIT ?: env.IMAGE_TAG
+                    sh "docker push ${FRONT_IMAGE}:latest"
+                    sh "docker push ${FRONT_IMAGE}:${commitTag}"
+                    sh "docker push ${BACK_IMAGE}:latest"
+                    sh "docker push ${BACK_IMAGE}:${commitTag}"
                 }
             }
         }
 
-        stage('Terraform Init') {
+        stage('Deploy') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh "cd terraform && terraform init"
-                }
-            }
-        }
-
-        stage('Terraform Plan') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh "cd terraform && terraform plan -out=tfplan"
-                }
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh "cd terraform && terraform apply -auto-approve tfplan"
-                }
-            }
-        }
-
-        stage('Deploy (Optional)') {
-            steps {
+                // Ship the compose + nginx config and run docker compose on the EC2 host Jenkins manages.
                 withCredentials([file(credentialsId: 'ec2-ssh-key', variable: 'KEY_FILE')]) {
                     sh '''
-                        cd terraform
-                        EC2_IP=$(terraform output -raw jenkins_public_ip)
-                        echo "Deploying to EC2 at $EC2_IP"
-                        
-                        ssh -i $KEY_FILE \
-                            -o StrictHostKeyChecking=no \
-                            -o UserKnownHostsFile=/dev/null \
-                            ubuntu@$EC2_IP << 'ENDSSH'
-                        
-                        # Install Docker if not present
-                        if ! command -v docker &> /dev/null; then
+                        set -e
+                        EC2_IP=$(cd terraform && terraform output -raw jenkins_public_ip)
+
+                        # Prepare remote workspace with current compose + nginx config.
+                        ssh -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$EC2_IP "mkdir -p /home/ubuntu/personal-blog"
+                        scp -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null docker-compose.yaml nginx.conf ubuntu@$EC2_IP:/home/ubuntu/personal-blog/
+
+                        ssh -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$EC2_IP <<'ENDSSH'
+                            set -e
                             sudo apt-get update
-                            sudo apt-get install -y docker.io
-                            sudo usermod -aG docker ubuntu
-                        fi
-                        
-                        # Pull latest image
-                        docker pull nethmini12/personal-blog:latest
-                        
-                        # Stop and remove old container
-                        docker stop personal-blog || true
-                        docker rm personal-blog || true
-                        
-                        # Run new container
-                        docker run -d --name personal-blog -p 80:3000 nethmini12/personal-blog:latest
-                        
-                        echo "Deployment complete!"
-ENDSSH
+                            sudo apt-get install -y docker.io docker-compose-plugin
+                            sudo systemctl enable --now docker
+
+                            # Login once so pulls succeed when images are private.
+                            echo "${DOCKERHUB_CREDENTIALS_PSW}" | sudo docker login -u "${DOCKERHUB_CREDENTIALS_USR}" --password-stdin
+
+                            cd /home/ubuntu/personal-blog
+                            sudo docker compose pull
+                            sudo docker compose down --remove-orphans
+                            sudo docker compose up -d
+                        ENDSSH
                     '''
                 }
             }

@@ -1,14 +1,4 @@
-﻿FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install
-
-COPY . .
-RUN npm run build
-
-# Serve production build with node static server
-RUN npm install -g serve
-EXPOSE 3000
-CMD ["serve", "-s", "build", "-l", "3000"]
+﻿# Root Dockerfile not used; keeping as thin helper to document build entrypoints.
+# Frontend/Backend now have dedicated Dockerfiles under frontend/ and backend/.
+FROM scratch
+CMD ["/bin/true"]
