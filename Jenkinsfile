@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-login')
+        AWS_CREDENTIALS = credentials('aws-creds')
         IMAGE_NAME = 'nethmini12/personal-blog'
         GIT_REPO_URL = 'https://github.com/nethminithathsarani/Devops_Project.git'
         GIT_BRANCH = 'main'
@@ -30,6 +31,30 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 sh "docker push ${IMAGE_NAME}:latest"
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh "cd terraform && terraform init"
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh "cd terraform && terraform plan -out=tfplan"
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh "cd terraform && terraform apply -auto-approve tfplan"
+                }
             }
         }
 
