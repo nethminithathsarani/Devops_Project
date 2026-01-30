@@ -60,7 +60,38 @@ pipeline {
 
         stage('Deploy (Optional)') {
             steps {
-                echo 'Deploying to environment...'
+                withCredentials([file(credentialsId: 'ec2-ssh-key', variable: 'KEY_FILE')]) {
+                    sh '''
+                        cd terraform
+                        EC2_IP=$(terraform output -raw jenkins_public_ip)
+                        echo "Deploying to EC2 at $EC2_IP"
+                        
+                        ssh -i $KEY_FILE \
+                            -o StrictHostKeyChecking=no \
+                            -o UserKnownHostsFile=/dev/null \
+                            ubuntu@$EC2_IP << 'ENDSSH'
+                        
+                        # Install Docker if not present
+                        if ! command -v docker &> /dev/null; then
+                            sudo apt-get update
+                            sudo apt-get install -y docker.io
+                            sudo usermod -aG docker ubuntu
+                        fi
+                        
+                        # Pull latest image
+                        docker pull nethmini12/personal-blog:latest
+                        
+                        # Stop and remove old container
+                        docker stop personal-blog || true
+                        docker rm personal-blog || true
+                        
+                        # Run new container
+                        docker run -d --name personal-blog -p 80:3000 nethmini12/personal-blog:latest
+                        
+                        echo "Deployment complete!"
+ENDSSH
+                    '''
+                }
             }
         }
     }
