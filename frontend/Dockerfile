@@ -8,8 +8,10 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-# Install dependencies without suppressing errors
-RUN npm install
+# Install dependencies (increase timeout/retries for slower networks)
+RUN npm config set fetch-timeout 600000 \
+	&& npm config set fetch-retries 5 \
+	&& npm install
 
 # Copy application source
 COPY . .
