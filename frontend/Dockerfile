@@ -1,20 +1,25 @@
 # Dockerfile for React client
 
-# Build react client
-FROM node:20-alpine
+# Build production bundle on Node 18 (react-scripts 5 compatible)
+FROM node:18-alpine
 
-# Working directory be app
+# Working directory inside container
 WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-###  Installing dependencies
+# Install dependencies without suppressing errors
+RUN npm install
 
-RUN npm install --silent
-
-# copy local files to app folder
+# Copy application source
 COPY . .
+
+# Build optimized production assets
+RUN npm run build
+
+# Serve with serve package
+RUN npm install -g serve
 
 EXPOSE 3000
 
-CMD ["npm","start"]
+CMD ["serve", "-s", "build", "-l", "3000"]
