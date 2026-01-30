@@ -31,7 +31,7 @@ export default function Home() {
       }
     };
     fetchPosts();
-    return () => { mounted = false };
+    return () => { mounted = false }; //test pipeline
   }, []);
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export default function Home() {
         )}
 
         {!loading && !error && posts.length > 3 && (
-          <div className="all-posts" id="all-posts">
+          <div className="all-posts" id="all-posts"> 
             <ul>
               {posts.slice(3).map(post => (
                 <li key={post._id}>
