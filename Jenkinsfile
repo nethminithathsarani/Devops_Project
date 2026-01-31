@@ -95,29 +95,22 @@ pipeline {
                         ssh -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$EC2_IP "mkdir -p /home/ubuntu/personal-blog"
                         scp -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null docker-compose.yaml nginx.conf ubuntu@$EC2_IP:/home/ubuntu/personal-blog/
 
-                        ssh -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$EC2_IP <<ENDSSH
-                            set -e
-
-                            # Ensure Docker engine and Compose v2 are available on the host.
-                            sudo apt-get update
-                            sudo apt-get install -y docker.io
-
-                            if ! docker compose version >/dev/null 2>&1; then
-                                sudo mkdir -p /usr/local/lib/docker/cli-plugins
-                                sudo curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
-                                sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-                            fi
-
-                            sudo systemctl enable --now docker
-
-                            # Login once so pulls succeed when images are private. Expand creds before sudo so env reset does not drop them.
-                            sudo sh -c "echo '${DOCKERHUB_CREDENTIALS_PSW}' | docker login -u '${DOCKERHUB_CREDENTIALS_USR}' --password-stdin"
-
-                            cd /home/ubuntu/personal-blog
-                            sudo docker compose pull
-                            sudo docker compose down --remove-orphans
-                            sudo docker compose up -d
-                        ENDSSH
+                        # Non-interactive remote execution without heredocs; Jenkins-safe single SSH command.
+                        ssh -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$EC2_IP "set -e; \
+                            sudo apt-get update && \
+                            sudo apt-get install -y docker.io && \
+                            if ! docker compose version >/dev/null 2>&1; then \
+                                sudo mkdir -p /usr/local/lib/docker/cli-plugins && \
+                                sudo curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && \
+                                sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose; \
+                            fi && \
+                            sudo systemctl enable --now docker && \
+                            echo '${DOCKERHUB_CREDENTIALS_PSW}' | sudo docker login -u '${DOCKERHUB_CREDENTIALS_USR}' --password-stdin && \
+                            cd /home/ubuntu/personal-blog && \
+                            sudo docker compose pull; \
+                            (sudo docker ps -q --filter publish=80 | xargs -r sudo docker rm -f) || true; \
+                            sudo docker compose down --remove-orphans && \
+                            sudo docker compose up -d"
                     '''
                 }
             }
