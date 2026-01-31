@@ -110,6 +110,8 @@ pipeline {
                             sudo systemctl enable --now docker
 
                             # Login once so pulls succeed when images are private.
+                            # Login with both user and password to avoid stdin username error.
+                            # Login with both user and password to avoid stdin username error.
                             echo "${DOCKERHUB_CREDENTIALS_PSW}" | sudo docker login -u "${DOCKERHUB_CREDENTIALS_USR}" --password-stdin
 
                             cd /home/ubuntu/personal-blog
