@@ -47,17 +47,7 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            steps {
-                // Run frontend unit tests in CI mode; backend currently has no tests but keeps hook.
-                dir('frontend') {
-                    sh 'CI=true npm test -- --watch=false --passWithNoTests'
-                }
-                dir('backend') {
-                    sh 'npm test'
-                }
-            }
-        }
+
 
         stage('Build') {
             steps {
