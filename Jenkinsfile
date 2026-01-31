@@ -95,8 +95,12 @@ pipeline {
                         ssh -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$EC2_IP "mkdir -p /home/ubuntu/personal-blog"
                         scp -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null docker-compose.yaml nginx.conf ubuntu@$EC2_IP:/home/ubuntu/personal-blog/
 
-                        ssh -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$EC2_IP <<'ENDSSH'
+                        ssh -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$EC2_IP <<ENDSSH
                             set -e
+
+                            DOCKER_USER="${DOCKERHUB_CREDENTIALS_USR}"
+                            DOCKER_PASS="${DOCKERHUB_CREDENTIALS_PSW}"
+
                             # Ensure Docker engine and Compose v2 are available on the host.
                             sudo apt-get update
                             sudo apt-get install -y docker.io
@@ -110,9 +114,7 @@ pipeline {
                             sudo systemctl enable --now docker
 
                             # Login once so pulls succeed when images are private.
-                            # Login with both user and password to avoid stdin username error.
-                            # Login with both user and password to avoid stdin username error.
-                            echo "${DOCKERHUB_CREDENTIALS_PSW}" | sudo docker login -u "${DOCKERHUB_CREDENTIALS_USR}" --password-stdin
+                            echo "${DOCKER_PASS}" | sudo docker login -u "${DOCKER_USER}" --password-stdin
 
                             cd /home/ubuntu/personal-blog
                             sudo docker compose pull
