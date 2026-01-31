@@ -98,9 +98,6 @@ pipeline {
                         ssh -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$EC2_IP <<ENDSSH
                             set -e
 
-                            DOCKER_USER="${DOCKERHUB_CREDENTIALS_USR}"
-                            DOCKER_PASS="${DOCKERHUB_CREDENTIALS_PSW}"
-
                             # Ensure Docker engine and Compose v2 are available on the host.
                             sudo apt-get update
                             sudo apt-get install -y docker.io
@@ -113,8 +110,8 @@ pipeline {
 
                             sudo systemctl enable --now docker
 
-                            # Login once so pulls succeed when images are private.
-                            echo "${DOCKER_PASS}" | sudo docker login -u "${DOCKER_USER}" --password-stdin
+                            # Login once so pulls succeed when images are private. Expand creds before sudo so env reset does not drop them.
+                            sudo sh -c "echo '${DOCKERHUB_CREDENTIALS_PSW}' | docker login -u '${DOCKERHUB_CREDENTIALS_USR}' --password-stdin"
 
                             cd /home/ubuntu/personal-blog
                             sudo docker compose pull
