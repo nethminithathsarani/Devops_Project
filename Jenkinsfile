@@ -97,8 +97,16 @@ pipeline {
 
                         ssh -i $KEY_FILE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$EC2_IP <<'ENDSSH'
                             set -e
+                            # Ensure Docker engine and Compose v2 are available on the host.
                             sudo apt-get update
-                            sudo apt-get install -y docker.io docker-compose-plugin
+                            sudo apt-get install -y docker.io
+
+                            if ! docker compose version >/dev/null 2>&1; then
+                                sudo mkdir -p /usr/local/lib/docker/cli-plugins
+                                sudo curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+                                sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+                            fi
+
                             sudo systemctl enable --now docker
 
                             # Login once so pulls succeed when images are private.

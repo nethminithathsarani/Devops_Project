@@ -1,7 +1,7 @@
 # Frontend image: multi-stage (build → nginx) to serve static bundle efficiently.
 
 # Stage 1 - build React app. Use path-aware COPY because build context is repo root.
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm ci --legacy-peer-deps
