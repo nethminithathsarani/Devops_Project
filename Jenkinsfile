@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    tools {
+        // Use Jenkins-managed NodeJS tool so npm is available to the agent.
+        nodejs 'Node20'
+    }
+
     // Build on every GitHub push so Jenkins stays in sync with repo state.
     triggers {
         githubPush()
