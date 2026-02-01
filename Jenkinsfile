@@ -72,7 +72,7 @@ pipeline {
         stage('Docker Push') {
             steps {
                 // Push both frontend and backend images so deploy can pull by tag.
-                sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
                 script {
                     def commitTag = env.SHORT_COMMIT ?: env.IMAGE_TAG
                     sh "docker push ${FRONT_IMAGE}:latest"

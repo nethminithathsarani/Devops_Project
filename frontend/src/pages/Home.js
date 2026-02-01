@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
-// Default to same-host backend on port 5000 so browser talks to the published API when no env override.
-const API_BASE = process.env.REACT_APP_API_URL || `${window.location.protocol}//${window.location.hostname}:5000`;
+// Use same-origin; Nginx proxies /api to backend in production.
+const API_BASE = process.env.REACT_APP_API_URL || window.location.origin;
 const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',

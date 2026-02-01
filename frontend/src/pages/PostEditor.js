@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_URL || `${window.location.protocol}//${window.location.hostname}:5000`;
+const API_BASE = process.env.REACT_APP_API_URL || window.location.origin;
 
 export default function PostEditor({ mode }) {
   const navigate = useNavigate();
