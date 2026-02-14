@@ -65,7 +65,7 @@ export default function Home() {
         <header className="section__header">
           <div>
             <p className="section__eyebrow">Latest Posts</p>
-            <h2>Check out our most recent articles</h2>
+            <h2>Nethmini</h2>
           </div>
           <a className="section__link" href="#all-posts">View All Posts</a>
         </header>
