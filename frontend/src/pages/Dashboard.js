@@ -7,7 +7,7 @@ const API_BASE = process.env.REACT_APP_API_URL || window.location.origin;
 export default function Dashboard() {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); //test
   const [error, setError] = useState(null);
 
   const token = localStorage.getItem('token');
