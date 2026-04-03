@@ -1,70 +1,78 @@
-# Getting Started with Create React App
+# BlogHub
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+BlogHub is a small blog admin app with a React frontend, an Express/MongoDB backend, Docker support, and Nginx for production serving.
 
-## Available Scripts
+## Project Layout
 
-In the project directory, you can run:
+- [frontend](frontend) contains the React client.
+- [backend](backend) contains the API, auth, and MongoDB models.
+- [docker-compose.yaml](docker-compose.yaml) runs the stack locally with MongoDB.
+- [terraform](terraform) contains infrastructure files and state, which should stay local.
 
-### `npm start`
+## Before You Push
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Make sure you do the following before publishing the repository:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+1. Keep secrets out of git. Use [backend/.env.example](backend/.env.example) as the template for a local [backend/.env](backend/.env) file.
+2. Set the frontend API URL through `REACT_APP_API_URL` when the frontend is not served from the same origin as the backend.
+3. Avoid committing build output, Terraform state, or local environment files.
+4. Rotate any secret values that were already committed or shared.
 
-### `npm test`
+## Environment Variables
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Backend variables:
 
-### `npm run build`
+- `PORT` - backend port, defaults to `5000`
+- `MONGO_URI` - MongoDB connection string
+- `JWT_SECRET` - JWT signing secret
+- `ADMIN_USERNAME` - admin login username
+- `ADMIN_PASSWORD_HASH` - bcrypt hash for the admin password
+- `ADMIN_DISPLAY_NAME` - optional display name for created posts
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Frontend variables:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- `REACT_APP_API_URL` - API base URL, for example `http://localhost:5000`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Local Development
 
-### `npm run eject`
+Backend:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+cd backend
+npm install
+npm start
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Frontend:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+cd frontend
+npm install
+npm start
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+If you run the frontend and backend separately, point the frontend at the backend API with `REACT_APP_API_URL`.
 
-## Learn More
+## Docker
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+For the full stack, use Docker Compose from the repository root:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+docker compose up --build
+```
 
-### Code Splitting
+The stack expects the backend to be reachable on port `5000` and the frontend to be served behind Nginx on port `80`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Production Checklist
 
-### Analyzing the Bundle Size
+Before publishing or deploying, verify that:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- `npm run build` succeeds for the frontend.
+- Login works with the configured admin credentials.
+- Create, edit, and delete post flows work.
+- MongoDB credentials and JWT secrets are stored outside the repository.
+- The repository does not include generated assets or Terraform state.
 
-### Making a Progressive Web App
+## Notes
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The starter Create React App documentation was replaced with repo-specific setup guidance so the repository is safe to publish and easier to onboard.
