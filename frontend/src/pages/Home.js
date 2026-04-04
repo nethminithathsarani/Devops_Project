@@ -89,7 +89,7 @@ export default function Home() {
                 </div>
                 <h3>{post.title}</h3>
                 {post.body && <p>{post.body}</p>}
-                <button type="button" className="post-card__button">Read More</button>
+                <button type="button" className="post-card__button">Read More..</button>
               </article>
             );})}
           </div>
